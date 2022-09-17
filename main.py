@@ -1,3 +1,4 @@
+import math
 from collections import namedtuple
 from random import randint, random
 from matplotlib import pyplot as plt, colors
@@ -12,7 +13,7 @@ DEFAULT_COLOR = (0, 0, 0)
 NEAREST_NEIGHBOR_BIAS = NNB = 2
 MAX_NUMBER_OF_CONNECTIONS = MNC = 2
 
-N = 100
+N = 20
 nodes = []
 lines = []
 
@@ -36,12 +37,33 @@ def line_gen(node1: type(Node), node2: type(Node)) -> type(Line):
     return line
 
 
+def weighted_probability(probs) -> int:
+    rand = random()
+    total = 0
+    for i in range(len(probs)):
+        total += probs[i]
+        if total > rand:
+            return i
+
+    return len(probs) - 1
+
+
 def gen_lines(node_list) -> list[Line]:
     linez = []
 
     for i in range(N):
-        for j in range(i, min(i+MNC, N)):
-            linez.append(line_gen(node_list[i], node_list[randint(0, N-1)]))
+
+        probability_lines = []
+        node1 = node_list[i]
+        for k in range(min(i + 1, N), min(i + MNC, N)):
+            node2 = node_list[k]
+            probability_lines.append(1 / (math.dist([node1.x_pos, node1.y_pos], [node2.x_pos, node2.y_pos]) ** NNB))
+
+        summed_probs = sum(probability_lines)
+        normalized_probs = [p / summed_probs for p in probability_lines]
+
+        for j in range(min(i + 1, N), min(i + MNC, N)):
+            linez.append(line_gen(node1, node_list[min(weighted_probability(normalized_probs) + i + 1, N)]))
 
     return linez
 
